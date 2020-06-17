@@ -1,0 +1,125 @@
+{# Template fragment for outputting a list of runs #}
+{% import 'macros/helpers.twig' as helpers %}
+<div class="row-fluid">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                {% if show_compare_link %}
+                <th class="column_1 column_id">&nbsp;</th>
+                {% endif %}
+                <th class="column_2 column_method {% if "column_method" not in main_list_columns %}hidden{% endif %}">
+                  Method
+                </th>
+                <th class="column_3 column_url {% if "column_url" not in main_list_columns %}hidden{% endif %}">URL</th>
+                <th class="column_4 column_application {% if "column_application" not in main_list_columns %}hidden{% endif %}">
+                    {{ helpers.sort_link('Application', base_url, 'application', paging, search) }}
+                </th>
+                <th class="column_5 column_controller {% if "column_controller" not in main_list_columns %}hidden{% endif %}">
+                    {{ helpers.sort_link('Controller', base_url, 'controller', paging, search) }}
+                </th>
+                <th class="column_6 column_action {% if "column_action" not in main_list_columns %}hidden{% endif %}">
+                    {{ helpers.sort_link('Action', base_url, 'action', paging, search) }}
+                </th>
+                <th class="column_7 column_version {% if "column_version" not in main_list_columns %}hidden{% endif %}">
+                    {{ helpers.sort_link('Version', base_url, 'version', paging, search) }}
+                </th>
+                <th class="column_8 column_date {% if "column_date" not in main_list_columns %}hidden{% endif %}">
+                    {{ helpers.sort_link('Time', base_url, 'time', paging, search) }}
+                </th>
+                <th class="column_9 column_wt {% if "column_wt" not in main_list_columns %}hidden{% endif %} right">
+                    <span class="tip" title="Wall time">
+                        {{ helpers.sort_link('wt', base_url, 'wt', paging, search) }}
+                    </span>
+                </th>
+                <th class="column_10 column_cpu {% if "column_cpu" not in main_list_columns %}hidden{% endif %} right">
+                    <span class="tip" title="CPU time">
+                        {{ helpers.sort_link('cpu', base_url, 'cpu', paging, search) }}
+                    </span>
+                </th>
+                <th class="column_11 column_mu {% if "column_mu" not in main_list_columns %}hidden{% endif %} right">
+                    <span class="tip" title="Memory Usage">
+                        {{ helpers.sort_link('mu', base_url, 'mu', paging, search) }}
+                    </span>
+                </th>
+                <th class="column_12 column_pmu {% if "column_pmu" not in main_list_columns %}hidden{% endif %} right">
+                    <span class="tip" title="Peak Memory">
+                        {{ helpers.sort_link('pmu', base_url, 'pmu', paging, search) }}
+                    </span>
+                </th>
+                <th>
+                    Ops
+                </th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for result in runs %}
+        <tr>
+            {% if show_compare_link %}
+            <td class="column_1 column_id">
+                <a class="btn btn-small" href="{{ url('run.compare', {base: base_run.id|trim, head: result.id|trim}) }}">
+                Compare
+                </a>
+            </td>
+            {% endif %}
+            <td class="column_2 column_method {% if "column_method" not in main_list_columns %}hidden{% endif %}">
+              <a href="{{ url('run.view', {'id': result.id|trim }) }}">
+                {{result.meta('SERVER.REQUEST_METHOD')}}
+              </a>
+            </td>
+            <td class="column_3 column_url {% if "column_url" not in main_list_columns %}hidden{% endif %}">
+                {% set addr = result.meta('SERVER.SERVER_NAME') ~ result.meta.url %}
+                {{ helpers.tip_link(
+                    addr,
+                    50,
+                    'url.view',
+                    {'url': result.meta.simple_url}
+                ) }}
+            </td>
+            <td class="column_4 column_application {% if "column_application" not in main_list_columns %}hidden{% endif %}">{{ result.meta('application') }}</td>
+            <td class="column_5 column_controller {% if "column_controller" not in main_list_columns %}hidden{% endif %}">{{ result.meta('controller') }}</td>
+            <td class="column_6 column_action {% if "column_action" not in main_list_columns %}hidden{% endif %}">{{ result.meta('action') }}</td>
+            <td class="column_7 column_version {% if "column_version" not in main_list_columns %}hidden{% endif %}">{{ result.meta('version') }}</td>
+            <td class="column_8 column_date {% if "column_date" not in main_list_columns %}hidden{% endif %}">
+              <a href="{{ url('run.view', {'id': result.id|trim }) }}">
+                {{ result.date|date(date_format) }}
+              </a>
+              <a href="{{ url('run.view', {'id': result.id|trim, 'filter': true }) }}">
+                [filter]
+              </a>
+            </td>
+            <td class="column_9 column_wt {% if "column_wt" not in main_list_columns %}hidden{% endif %} right">
+                <span class="tip" title="{{ result.get('meta')['summary']['wt']/1000000 }}s">
+                    {{ result.get('meta')['summary']['wt'] |as_time}}
+                </span>
+            </td>
+            <td class="column_10 column_cpu {% if "column_cpu" not in main_list_columns %}hidden{% endif %} right">
+                <span class="tip" title="{{ result.get('meta')['summary']['cpu']/1000000 }}s">
+                    {{ result.get('meta')['summary']['cpu'] |as_time }}
+                </span>
+            </td>
+            <td class="column_11 column_mu {% if "column_mu" not in main_list_columns %}hidden{% endif %} right">
+                <span class="tip" title="{{ helpers.bytesToSize(result.get('meta')['summary']['mu']) }}">
+                    {{ result.get('meta')['summary']['mu'] |as_bytes }}
+                </span>
+            </td>
+            <td class="column_12 column_pmu {% if "column_pmu" not in main_list_columns %}hidden{% endif %} right">
+                <span class="tip" title="{{ helpers.bytesToSize(result.get('meta')['summary']['pmu']) }}">
+                    {{ result.get('meta')['summary']['pmu'] |as_bytes }}
+                </span>
+            </td>
+            <td>
+                <a href="{{ url('run.delete.form', {'id': result.id|trim }) }}">
+                    <i class="icon-trash"></i>
+                </a>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6" class="no-results">
+                Your search conditions matched no runs. Try changing you search criteria.
+            </td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

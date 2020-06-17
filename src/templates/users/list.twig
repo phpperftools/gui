@@ -1,0 +1,83 @@
+{% extends 'layout/base.twig' %}
+{% import 'macros/helpers.twig' as helpers %}
+
+{% block title %}
+- Users - list
+{% endblock %}
+               1111
+{% block content %}
+<h1>Users</h1>
+
+{% if users|length %}
+    <ul class="unstyled watch-list">
+        {% for i, watch in watched %}
+        <li>
+            <div class="control-group">
+                <input name="watch[{{ i }}][id]" type="hidden" value="{{ watch.id }}" />
+                <input name="watch[{{ i }}][removed]" type="hidden" class="removed" value="0" />
+                <input class="input-xlarge" name="watch[{{ i }}][name]" type="text" value="{{ watch.name }}" />
+                <label class="checkbox">
+                    <input name="watch[{{ i }}][options][counted]" type="checkbox" value="1" {% if watch['options']['counted'] == 1 %}checked="checked"{% endif %}/>Count
+                </label>
+                <label class="checkbox">
+                    <input name="watch[{{ i }}][options][grouped]" type="checkbox" value="1" {% if watch['options']['grouped'] == 1 %}checked="checked"{% endif %}/>Group
+                </label>
+
+                <a href="#" class="btn btn-small btn-warning watch-delete">Remove</a>
+            </div>
+        </li>
+        {% endfor %}
+        <li id="new-row-template">
+            <div class="control-group">
+                <input class="input-xlarge" name="watch[{{ watched|length }}][name]" type="text" />
+                <label class="checkbox">
+                    <input name="watch[{{ i }}][options][counted]" type="checkbox" value="1" />Count
+                </label>
+                <label class="checkbox">
+                    <input name="watch[{{ i }}][options][grouped]" type="checkbox" value="1" />Group
+                </label>
+                <a href="#" class="btn btn-small btn-warning watch-delete">Remove</a>
+            </div>
+        </li>
+    </ul>
+    <p class="offset2">
+        <a href="#" id="add-new-watch" class="btn">Add another</a>
+    </p>
+
+    <div class="form-actions">
+        <input class="btn btn-large btn-primary" type="submit" value="Save" />
+    </div>
+{% else %}
+    <div class="hero-unit">
+        <h3>You have no users</h3>
+        <p>This is fine. Users are not required. You can create users using menu in top right hand corner.</p>
+    </div>
+{% endif %}
+
+
+{% endblock %}
+
+{% block jsfoot %}
+<script>
+$(document).ready(function () {
+    var template = $('#new-row-template').html();
+    var list = $('.watch-list');
+    var placeholder = list.children().length - 1;
+
+    $('.watch-list').on('click', '.watch-delete', function () {
+        var row = $(this).parent();
+        row.fadeOut('fast', function () {
+            row.find('.removed').val(1);
+        });
+        return false;
+    });
+
+    $('#add-new-watch').on('click', function () {
+        var numElements = list.children().length;
+        var insert = template.replace(placeholder, numElements);
+        list.append('<li>' + insert + '</li>');
+        return false;
+    });
+});
+</script>
+{% endblock %}

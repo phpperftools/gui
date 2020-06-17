@@ -1,0 +1,147 @@
+{% import 'macros/helpers.twig' as helpers %}
+
+<div class="row-fluid">
+    <h3>Function Details</h3>
+    <h4 class="function-name">{{ symbol }}</h4>
+    <p>
+        <a href="{{ url("watch.add", {"symbol": symbol, 'id': id} ) }}" class="btn btn-primary">Add to watched functions</a>
+    </p>
+
+    <table class="table table-hover">
+        <tbody>
+            <tr>
+                <th>Call Count</th>
+                <td>{{ current.ct }}</td>
+            </tr>
+            <tr>
+                <th>Self Wall Time</th>
+                <td>
+                    <span class="tip" title="{{ current.ewt/1000000 }}s">
+                    {{ current.ewt|as_time }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th>Self CPU</th>
+                <td>
+                    <span class="tip" title="{{ current.ecpu/1000000 }}s">
+                    {{ current.ecpu|as_time }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th>Self Memory Usage</th>
+                <td>
+                    <span class="tip" title="{{ helpers.bytesToSize(current.emu) }}">
+                    {{ current.emu|as_bytes }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th>Self Peak Memory Usage</th>
+                <td>
+                    <span class="tip" title="{{ helpers.bytesToSize(current.epmu) }}">
+                        {{ current.epmu|as_bytes }}
+                    </span>
+                </td>
+            </tr>
+            <tr>
+                <th>Inclusive Wall Time</th>
+                <td>{{ helpers.time_and_percent('wt', current, main) }}</td>
+            </tr>
+            <tr>
+                <th>Inclusive CPU</th>
+                <td>{{ helpers.time_and_percent('cpu', current, main) }}</td>
+            </tr>
+            <tr>
+                <th>Inclusive Memory Usage</th>
+                <td>{{ helpers.time_and_percent('mu', current, main) }}</td>
+            </tr>
+            <tr>
+                <th>Inclusive Peak Memory Usage</th>
+                <td>{{ helpers.time_and_percent('pmu', current, main) }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>Parent functions</h3>
+    <table class="table table-hover table-sort">
+        <thead>
+            <tr>
+                <th>Function</th>
+                <th>Call Count</th>
+
+                <th>Self Wall Time</th>
+                <th>Self Memory Usage</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for parent in parents %}
+        <tr>
+            <td class="text child-symbol">
+                <a href="{{ url("run.symbol", {'id': id, 'symbol': parent.function}) }}" target="_blank"><i class="icon-fullscreen"></i></a>
+                {{ helpers.tip_link(
+                    parent.function,
+                    65,
+                    null,
+                    {'id': id, 'symbol': parent.function}
+                ) }}
+            </td>
+            <td width="80">{{ child.ct }}</td>
+
+            <td width="120">{{ helpers.time_and_percent('wt', parent, main) }}</td>
+            <td width="140">
+                <span class="tip" title="{{ helpers.bytesToSize(parent.mu) }}">
+                {{ parent.mu|as_bytes }}
+                </span>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">{{ symbol }} had no parents.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Child functions</h3>
+    <table class="table table-hover table-sort">
+        <thead>
+            <tr>
+                <th>Function</th>
+                <th>Call Count</th>
+
+                <th>Self Wall Time</th>
+                <th>Self Memory Usage</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for child in children %}
+        <tr>
+            <td class="text child-symbol">
+                <a href="{{ url("run.symbol", {'id': id, 'symbol': child.function}) }}" target="_blank"><i class="icon-fullscreen"></i></a>
+                {{ helpers.tip_link(
+                    child.function,
+                    65,
+                    null,
+                    {'id': id, 'symbol': child.function}
+                ) }}
+            </td>
+            <td width="80">{{ child.ct }}</td>
+
+            <td width="120">{{ helpers.time_and_percent('wt', child, main) }}</td>
+            <td width="140">
+                <span class="tip" title="{{ helpers.bytesToSize(child.mu) }}">
+                {{ child.mu|as_bytes }}
+                </span>
+            </td>
+        </tr>
+        {% else %}
+        <tr>
+            <td colspan="6">{{ symbol }} called no functions.</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>

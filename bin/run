@@ -1,0 +1,18 @@
+#!/usr/bin/env php
+<?php
+array_shift($argv); // Discard the filename
+$pathinfo = array_shift($argv);
+if (empty($pathinfo)) {
+    $pathinfo = '--help';
+}
+
+$app = new Slim(...);
+$app->environment = Slim\Environment::mock([
+    'PATH_INFO' => $pathinfo
+]);
+
+$app->get('foo_bar', function () {
+    echo 'Hello!!';
+});
+
+$app->run();

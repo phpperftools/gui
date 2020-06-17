@@ -1,0 +1,7 @@
+/composer.lock
+/composer.phar
+/vendor/
+/config/config.php
+/data/
+/watched_functions/
+/cache/

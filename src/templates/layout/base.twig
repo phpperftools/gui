@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <title>PHPPerfTools/Gui {% block title '' %}</title>
+    <link href="{{ static('css/bootstrap.min.css') }}" rel="stylesheet" media="screen">
+    <link href="{{ static('css/datepicker.css') }}" rel="stylesheet" media="screen">
+    <link href="{{ static('css/xhgui.css') }}" rel="stylesheet" media="screen">
+    <link href="{{ static('lib/c3-0.7.17/c3.css') }}" rel="stylesheet" media="screen">
+    {% block head '' %}
+</head>
+<body>
+    <div class="navbar navbar-static-top">
+        <div class="navbar-inner">
+            <div class="container-fluid">
+                <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </a>
+                <a class="brand" href="{{ url('home') }}">GUI</a>
+                <div class="nav-collapse collapse">
+                    <ul class="nav">
+                        <li><a href="{{ url('home') }}">Recent</a></li>
+                        <li><a href="{{ url('home', {'sort': 'wt'}) }}">Longest wall time</a></li>
+                        <li><a href="{{ url('home', {'sort': 'cpu'}) }}">Most CPU</a></li>
+                        <li><a href="{{ url('home', {'sort': 'mu'}) }}">Most memory</a></li>
+                        <li><a href="{{ url('watch.list') }}">Watch Functions</a></li>
+                        <li><a href="{{ url('waterfall.list') }}">Waterfall</a></li>
+                        <li><a href="{{ url('import') }}">Import</a></li>
+                        {% if show_handler_select %}
+                        <li>
+                            <form class="navbar-form pull-left">
+                                    <label style="padding: 10px 15px 5px; float: left; display: block;">Select handler: </label>
+                                    <select name="handler" id="handlerSelect">
+                                        {% for handler in save_handlers %}
+                                            <option value="{{ handler.id }}" {% if current_handler.id == handler.id %}selected="selected"{% endif %}>{{ handler.name }} ({{ handler.type }})</option>
+                                        {% endfor %}
+                                    </select>
+                            </form>
+                        </li>
+                        {% endif %}
+                    </ul>
+                </div><!--/.nav-collapse -->
+                <div class="nav-collapse collapse nav pull-right">
+                    <ul class="nav">
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown">Login<b class="caret"></b></a>
+
+                            <ul class="dropdown-menu">
+                                <li><a href="/login">Login</a></li>
+                                <li><a href="/register">Create account</a></li>
+                                <li><a href="/accounts">Accounts</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        {% if flash.success %}
+        <div class="flash alert alert-success">
+            {{ flash.success }}
+        </div>
+        {% endif %}
+
+        {% if hard_limit_banner %}
+            <div class="flash alert alert-info">
+                This save handler has a limit of profiles that are visible. This is due high I/O cost of listing all
+                profiles with sort and filtering. To force displaying all profiles click
+                <a href="{{ url('home', {'force':'true'}) }}"><strong>here</strong></a>.
+            </div>
+        {% endif %}
+
+        {% block content '' %}
+
+        <hr>
+
+        <footer class="row-fluid footer-text">
+            <span class="span3">Original code: © Paul Reinheimer &amp; Mark Story 2012</span>
+            <span class="span3">Modifications: © Grzegorz Drozd {{ "now"|date('Y') }}</span>
+            <span class="span2">1,000,000 µs = 1 second</span>
+            <span class="span2">Save handler: {{ current_handler.name }}
+                {% if search.force == 'true' %}
+                    <a href="{{ url('home') }}">Disable force</a>
+                {% endif %}
+            </span>
+            <span class="span2">1,048,576 bytes = 1 MB</span>
+        </footer>
+    </div>
+
+    <script src="{{ static('js/jquery.js') }}"></script>
+    <script src="{{ static('js/bootstrap.min.js') }}"></script>
+    <script src="{{ static('js/bootstrap-tooltip.js') }}"></script>
+    <script src="{{ static('js/bootstrap-datepicker.js') }}"></script>
+    <script src="{{ static('js/d3.js') }}"></script>
+    <script src="{{ static('js/jquery.tablesorter.js') }}"></script>
+    <script src="{{ static('js/jquery.stickytableheaders.js') }}"></script>
+    <script src="{{ static('js/xhgui-charts.js') }}"></script>
+    <script src="{{ static('js/xhgui.js') }}"></script>
+    <script src="{{ static('lib/c3-0.7.17/c3.js') }}"></script>
+    {% block jsfoot '' %}
+</body>
+</html>

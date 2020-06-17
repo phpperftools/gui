@@ -1,0 +1,216 @@
+{% macro property_list(name, data) %}
+<dl>
+{% for k, v in data %}
+    <dt>{{ k }}</dt>
+    <dd class="text-wrap">
+        {% if not v is iterable %}
+          {{ v|join(' ') }}
+        {% else %}
+          {{ v|json_encode() }}
+        {% endif %}
+    </dd>
+{% else %}
+    <dt>No {{ name }} data</dt>
+{% endfor %}
+</dl>
+{% endmacro %}
+
+{% macro sort_link(text, url, sort, paging, search) %}
+{% set search = search|default({}) %}
+{% set classname = '' %}
+{% set direction = 'asc' %}
+{%- if paging.direction == 'asc' -%}
+    {% set direction = 'desc' %}
+{%- endif -%}
+{% if paging.sort == sort %}
+    {% set classname = "sort-#{direction}" %}
+{% endif %}
+{% set params = search|merge({'direction': direction, 'sort': sort}) %}
+
+<a class="sort-link {{ classname }}" href="{{ url(url, params) }}">{{ text }}</a>
+{% endmacro %}
+
+{% macro tip_link(text, len, url, params) %}
+<a {% if text|length > len %}class="tip"{% endif %}
+    href="{% if url != "" %}{{ url(url, params) }}{% else %}javascript:void(0);{% endif %}"
+    title="{{ text }}">
+    {{ text|truncate(len) }}
+</a>
+{% endmacro %}
+
+{% macro pagination(url, paging, search) %}
+
+    {# Hard code because I'm lazy #}
+    {% set num_pages = 10 %}
+    {% set midpoint = none %}
+    {% set start = 1 %}
+    {% set end = paging.total_pages|default(start) %}
+    {% set total_pages = paging.total_pages|default(start) %}
+    {% set search = search|default({}) %}
+    {% set search = search|merge({direction: paging.direction, sort: paging.sort}) %}
+
+    {# show a slice of pages in the middle #}
+    {% if total_pages > num_pages %}
+        {% set midpoint = (num_pages // 2) %}
+        {% set start = paging.page - midpoint %}
+        {% if start < 1 %}
+            {% set start = 1 %}
+        {% endif %}
+        {% set end = paging.page + midpoint %}
+        {% if end < num_pages %}
+            {% set end = num_pages %}
+        {% endif %}
+        {% if end > total_pages %}
+            {% set end = total_pages %}
+        {% endif %}
+    {% endif %}
+
+    <div class="pagination">
+    <ul>
+    {% if paging.page == 1 or total_pages == 1%}
+        <li class="disabled"><span>&laquo;</span><li>
+        <li class="disabled"><span>1</span><li>
+    {% else %}
+        <li><a href="{{ url(url, search|merge({'page': paging.page - 1})) }}">&laquo;</a><li>
+        <li><a href="{{ url(url, search|merge({'page': 1})) }}">1</a><li>
+    {% endif %}
+
+    {% if total_pages > start %}
+        {% for i in (start+1)..(end-1) %}
+            {% if i == paging.page %}
+            <li class="active"><span>{{ i }}</span></li>
+            {% else %}
+            <li><a href="{{ url(url, search|merge({'page': i})) }}">{{ i }}</a></li>
+            {% endif %}
+        {% endfor %}
+    {% endif %}
+
+    {% if paging.page == total_pages and total_pages != 1%}
+        <li class="disabled"><span>{{ total_pages }}</span></li>
+        <li class="disabled"><span>&raquo;</span></li>
+    {% elseif total_pages != 1 %}
+        <li><a href="{{ url(url, search|merge({'page': total_pages})) }}">{{ total_pages }}</a><li>
+        <li><a href="{{ url(url, search|merge({'page': paging.page + 1})) }}">&raquo;</a></li>
+    {% elseif total_pages == 1 %}
+        <li class="disabled"><span>&raquo;</span></li>
+    {% endif %}
+    </ul>
+    </div>
+{% endmacro %}
+
+{% macro time_and_percent(prop, value, total) %}
+<span class="tip" title="{{ value[prop]/1000000 }}">{{ value[prop]|as_time }}</span><br />
+({{ percent(value[prop], total[prop]) }})
+{% endmacro %}
+
+{% macro bytes_and_percent(prop, value, total) %}
+<span class="tip" title="{{ _self.bytesToSize(value[prop]) }}">{{ value[prop]|as_bytes }}</span><br />
+({{ percent(value[prop], total[prop]) }})
+{% endmacro %}
+
+{# copied from: https://stackoverflow.com/a/15303004#}
+{% macro bytesToSize(bytes) %}
+    {% spaceless %}
+        {% set kilobyte = 1024 %}
+        {% set megabyte = kilobyte * 1024 %}
+        {% set gigabyte = megabyte * 1024 %}
+        {% set terabyte = gigabyte * 1024 %}
+
+        {% if bytes < kilobyte %}
+            {{ bytes ~ ' B' }}
+        {% elseif bytes < megabyte %}
+            {{ (bytes / kilobyte)|number_format(2, '.') ~ ' KiB' }}
+        {% elseif bytes < gigabyte %}
+            {{ (bytes / megabyte)|number_format(2, '.') ~ ' MiB' }}
+        {% elseif bytes < terabyte %}
+            {{ (bytes / gigabyte)|number_format(2, '.') ~ ' GiB' }}
+        {% else %}
+            {{ (bytes / terabyte)|number_format(2, '.') ~ ' TiB' }}
+        {% endif %}
+    {% endspaceless %}
+{% endmacro %}
+
+
+{% macro help_popover(id, title, text, placement) %}
+    <a href="javascript:void(0);" class="btn" onclick="$('#{{ id }}').popover({placement:'{{ placement }}'}).show();">?</a>
+     <div class="popover" id="{{ id }}">
+         <div class="arrow"></div>
+         <div class="popover-title">
+             <h4 style="display: inline">{{ title }}</h4>
+             <a href="javascript:void(0)" onclick="$('#{{ id }}').hide();" class="pull-right close">&times;</a>
+         </div>
+         <div class="popover-content">
+             {{ text }}
+         </div>
+     </div>
+{% endmacro %}
+
+{% macro column_selector(list_columns, default_list, cookieName) %}
+    <a href="#" class="pull-right btn btn-small" title="" data-toggle="table-settings" data-target="settings-popover" data-cookie-name="{{ cookieName }}">
+        <i class="icon-list-alt"></i> Options
+    </a>
+    
+    <div class="popover left" id="settings-popover" style="width: 300px; left: auto;">
+        <div class="arrow"></div>
+        <div class="popover-title">
+            <h4 style="display: inline">Table settings</h4>
+            <a href="javascript:void(0)" onclick="$('#settings-popover').hide();" class="pull-right close">&times;</a>
+        </div>
+        <div class="popover-content">
+            <form autocomplete="off">
+                <div class="control-group">
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_method" {% if "column_method" in list_columns %}checked="checked"{% endif %}>
+                        Method
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_url" {% if "column_url" in list_columns %}checked="checked"{% endif %}>
+                        URL
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_application" {% if "column_application" in list_columns %}checked="checked"{% endif %}>
+                        Application
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_controller" {% if "column_controller" in list_columns %}checked="checked"{% endif %}>
+                        Controller
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_action" {% if "column_action" in list_columns %}checked="checked"{% endif %}>
+                        Action
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_version" {% if "column_version" in list_columns %}checked="checked"{% endif %}>
+                        Version
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_date" {% if "column_date" in list_columns %}checked="checked"{% endif %}>
+                        Date
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_wt" {% if "column_wt" in list_columns %}checked="checked"{% endif %}>
+                        WT
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_cpu" {% if "column_cpu" in list_columns %}checked="checked"{% endif %}>
+                        CPU
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_mu" {% if "column_mu" in list_columns %}checked="checked"{% endif %}>
+                        MU
+                    </label>
+                    <label class="checkbox">
+                        <input type="checkbox"  name="column[]" value="column_pmu" {% if "column_pmu" in list_columns %}checked="checked"{% endif %}>
+                        PMU
+                    </label>
+                </div>
+                <div class="btn-group">
+                    <button class="btn btn-primary" title="">Apply</button>
+                    <button class="btn btn-reset" title="">Reset to default</button>
+
+                </div>
+            </form>
+        </div>
+    </div>
+
+{% endmacro %}

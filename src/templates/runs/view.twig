@@ -1,0 +1,387 @@
+{% extends 'layout/base.twig' %}
+{% import 'macros/helpers.twig' as helpers %}
+
+{% block title %}
+- Profile - {{ result.meta.url }}
+{% endblock %}
+
+{% block content %}
+<div class="row-fluid">
+    <h1>Profile data for {{ result.meta('SERVER.REQUEST_METHOD')}} {{ result.meta.url }}</h1>
+</div>
+<div class="row-fluid">
+<div class="span3">
+    <div class="sidebar-nav">
+        <ul class="nav nav-list">
+            <li class="nav-header">This Run</li>
+            <li><strong>URL</strong> <a href="{{ url('url.view', {'url': result.meta('url')|simple_url }) }}">{{ result.meta('url') }}</a></li>
+            <li><strong>Time</strong> {{ result.date|date(date_format) }}</li>
+            <li><strong>ID</strong> {{ result.id }}</li>
+            <li><strong>Wall Time</strong> <span class="tip" title="{{ result.get('main()', 'wt')/1000000}}s">{{ result.get('main()', 'wt')|as_time }}</span></li>
+            <li><strong>CPU Time</strong> <span class="tip" title="{{ result.get('main()', 'cpu')/1000000}}s">{{ result.get('main()', 'cpu')|as_time }}</span></li>
+            <li><strong>Memory Usage</strong> <span class="tip" title="{{ helpers.bytesToSize(result.get('main()', 'mu')) }}">{{ result.get('main()', 'mu')|as_bytes }}</span></li>
+            <li><strong>Peak Memory Usage</strong> <span class="tip" title="{{ helpers.bytesToSize(result.get('main()', 'pmu')) }}">{{ result.get('main()', 'pmu')|as_bytes }}</span></li>
+
+            <li class="nav-header">GET</li>
+            <li>{{ helpers.property_list('GET', result.meta('get')) }}</li>
+
+            <li class="nav-header">SERVER</li>
+            <li>{{ helpers.property_list('SERVER', result.meta('SERVER')) }}
+
+            <li class="nav-header">Waterfall</li>
+            <li><strong>By IP</strong> <a href="{{ url('waterfall.list', {'remote_addr': result.meta.SERVER.REMOTE_ADDR, 'startDate': result.meta.SERVER.REQUEST_TIME - 5, 'endDate': result.meta.SERVER.REQUEST_TIME + 15}) }}">{{ result.meta.SERVER.REMOTE_ADDR }}</a></li>
+            <li><strong>By URL</strong> <a href="{{ url('waterfall.list', {'url': result.meta('url')|simple_url , 'startDate': result.meta.SERVER.REQUEST_TIME - 5, 'endDate': result.meta.SERVER.REQUEST_TIME + 15}) }}">{{ result.meta('url')|simple_url }}</a></li>
+            {% if result.application and result.controller and result.action %}
+            <li><strong>By APP&CTRL&ACT</strong> <a href="{{ url('waterfall.list', {'application':  result.application,'controller':result.controller, 'action':result.action, 'startDate': result.meta.SERVER.REQUEST_TIME - 5, 'endDate': result.meta.SERVER.REQUEST_TIME + 15}) }}">{{ result.meta('url')|simple_url }}</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</div>
+
+<div class="span9">
+
+    <div class="row-fluid">
+        <a href="{{ url('run.compare', {base: result.id|trim }) }}" id="compare-button" class="btn back-link">
+            Compare this run
+        </a>
+        <a href="{{ url('run.callgraph', {id: result.id|trim }) }}" class="btn back-link">
+            View Callgraph
+        </a>
+        <a href="#functions" class="btn back-link">
+            Jump to functions
+        </a>
+        <a href="{{ url('run.delete.form', {'id':result.id|trim, 'handler': current_handler.id })}}" class="btn back-link">
+            Delete this run
+        </a>
+
+        <h2>Watch Functions</h2>
+
+        <table class="table table-hover">
+        <thead>
+            <tr>
+                <th width="60%">Function</th>
+                <th width="10%" class="right">Call Count</th>
+                <th width="10%" class="right"><span class="tip" title="Self wall time">ewt</span></th>
+                <th width="10%" class="right"><span class="tip" title="Self memory use">emu</span></th>
+                <th width="10%" class="right"><span class="tip" title="Self peak memory use">epmu</span></th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for value in watches %}
+        <tr>
+            <td>
+            {{ helpers.tip_link(
+                value.function,
+                65,
+                'run.symbol',
+                {'id': result.id|trim, 'symbol': value.function}
+            ) }}
+                {% if value['grouped'] %}<span class="label label-info pull-right">Grouped</span>{% endif %}
+            </td>
+            <td class="right">{{ value.ct }}</td>
+            <td class="right">
+                <span class="tip" title="{{ value.ewt/1000000 }}s">
+                {{ value.ewt|as_time }}
+                </span>
+            </td>
+            <td class="right">
+                <span class="tip" title="{{ helpers.bytesToSize(value.emu) }}">
+                {{ value.emu|as_bytes }}
+                </span>
+            </td>
+            <td class="right">
+                <span class="tip" title="{{ helpers.bytesToSize(value.epmu) }}">
+                {{ value.epmu|as_bytes }}
+                </span>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">
+            You have no watch functions setup.
+            <a href="{{ url('watch.list') }}">Add a watch function now</a>.
+        </td></tr>
+        {% endfor %}
+        </tbody>
+        </table>
+    </div>
+
+    <div class="row-fluid">
+        <div class="span6">
+          <h2>Self Wall Time</h2>
+          <div id="wall-time-chart" class="chart-container"></div>
+          <dl>
+          {% for value in wall_time %}
+              <dt class="text-wrap">{{ value.name }}</dt>
+              <dd>{{ value.value|as_time }}</dd>
+          {% endfor %}
+          </dl>
+        </div>
+
+        <div class="span6">
+          <h2>Memory Hogs</h2>
+          <div id="memory-usage-chart" class="chart-container"></div>
+          <dl>
+          {% for value in memory %}
+              <dt class="text-wrap">{{ value.name }}</dt>
+              <dd>{{ value.value|as_bytes }}</dd>
+          {% endfor %}
+          </dl>
+        </div>
+    </div>
+  </div><!--/row-->
+</div>
+
+<div class="row-fluid">
+    <div class="pull-right form-search">
+        <div class="btn-group">
+            <input type="search" id="function-filter" placeholder="Type to filter by function name" />
+            {{ helpers.help_popover("help-filter", "Help", "Type regular expression to dynamically filter functions in table below. No reload. Rows are hidden. Clear to reset.", "top") }}
+        </div>
+{#      <a href="#" id="hide-internal" class="btn btn-default btn-small">#}
+{#          Hide internal functions#}
+{#      </a>#}
+        <div class="btn-group">
+            <a href="javascript:void(0);" id="" class="btn {% if function_filter is empty %}disabled{% endif %}" onclick="filterFunctons();">Apply function filter</a>
+            {{ helpers.help_popover("help-apply-function-filter", "Help", "This button is disabled when required config entry is empty. Remove functions defined in config filter from table below. No reload needed. Rows are removed not hidden.", "top") }}
+        </div>
+        <div class="btn-group">
+            <a href="#" id="customize-table" class="btn btn-primary">Apply numeric filters</a>
+            {{ helpers.help_popover("help-apply-filters", "Help", "Filter table by numeric values. No reload needed. Rows are hidden. Can be applied multiple times to exclude on different metrics.", "top") }}
+        </div>
+
+
+      <div class="popover left" id="metric-popover">
+          <div class="arrow"></div>
+          <div class="popover-title">
+              <h4 style="display: inline">Metric</h4>
+              <a href="javascript:void(0)" onclick="$('#metric-popover').hide();" class="pull-right close">&times;</a>
+          </div>
+
+          <div class="popover-content">
+              <div class="control-group">
+                  <select name="metric">
+                      <option value="ct">Call count</option>
+                      <option value="ewt">Self Wall Time</option>
+                      <option value="ecpu">Self CPU</option>
+                      <option value="emu">Self Memory Usage</option>
+                      <option value="epmu">Self Peak Memory Usage</option>
+                      <option value="wt">Inclusive Wall Time</option>
+                      <option value="cpu">Inclusive CPU</option>
+                      <option value="mu">Inclusive Memory Usage</option>
+                      <option value="pmu">Inclusive Peak Memory Usage</option>
+                  </select>
+              </div>
+              <div class="control-group">
+                  <label>
+                      Threshold
+                      <input type="number" name="threshold" value="1" step="1">
+                  </label>
+              </div>
+              <div class="control-group">
+                  <label>
+                      Operator
+                      <select name="operator">
+                          <option value="lt">less than</option>
+                          <option value="le">less than or equal</option>
+                          <option value="gt">greater than</option>
+                          <option value="ge">greater than or equal</option>
+                          <option value="eq">equals</option>
+                          <option value="ne">not equals</option>
+                      </select>
+                  </label>
+              </div>
+              <div class="btn-group">
+                  <button class="btn btn-primary" title="Set new values to filter. Shows all rows and filters values again.">Filter</button>
+                  <button class="btn btn-apply" title="Add new filter to current filters. Does not show hidden fields.">Add to filters</button>
+                  <button class="btn btn-danger" title="Reset filters. Show all fields.">Reset</button>
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+
+<div class="row-fluid">
+  <a name="functions"></a>
+  <table class="table table-hover table-sort" id="function-calls">
+    <thead>
+        <tr>
+            <th>Function</th>
+            <th>Call Count</th>
+            <th>Self Wall Time</th>
+            <th>Self CPU</th>
+            <th>Self Memory Usage</th>
+            <th>Self Peak Memory Usage</th>
+            <th>Inclusive Wall Time</th>
+            <th>Inclusive CPU</th>
+            <th>Inclusive Memory Usage</th>
+            <th>Inclusive Peak Memory Usage</th>
+        </tr>
+    </thead>
+    <tbody>
+    {% for key, value in profile %}
+    <tr>
+        <td class="text">
+            {{ helpers.tip_link(
+                key,
+                65,
+                'run.symbol',
+                {'id': result.id|trim, 'symbol': key}
+            ) }}
+        </td>
+        <td class="right value-ct">{{ value.ct }}</td>
+        <td class="right value-ewt">{{ value.ewt|as_time }}</td>
+        <td class="right value-ecpu">{{ value.ecpu|as_time }}</td>
+        <td class="right value-emu">{{ value.emu|as_bytes }}</td>
+        <td class="right value-epmu">{{ value.epmu|as_bytes }}</td>
+        <td class="right value-wt">{{ value.wt|as_time }}</td>
+        <td class="right value-cpu">{{ value.cpu|as_time }}</td>
+        <td class="right value-mu">{{ value.mu|as_bytes }}</td>
+        <td class="right value-pmu">{{ value.pmu|as_bytes }}</td>
+    </tr>
+    {% endfor %}
+    </tbody>
+</table>
+</div><!--/row-->
+{% endblock %}
+
+{% block jsfoot %}
+<script type="text/javascript">
+    var functionFilter = {{ function_filter|json_encode|raw }};
+</script>
+
+
+<script type="text/javascript">
+$(document).ready(function () {
+
+    $("a[data-toggle=popover]")
+        .popover()
+        .click(function(e) {
+            e.preventDefault()
+        });
+
+    var gear = $('#customize-table');
+    var popover = $('#metric-popover');
+    var ok = popover.find('.btn.btn-primary');
+    var apply = popover.find('.btn.btn-apply');
+    var resetFilters = popover.find('.btn.btn-danger');
+
+    var selectedMetricField = $('select[name=metric]');
+    var thresholdField = $('input[name=threshold]');
+    var operator = $('select[name=operator]');
+    var rows = $('#function-calls tbody tr');
+
+    gear.on('click', function(e) {
+        popover.toggle();
+        var width = gear.outerWidth();
+        var height = popover.height();
+        var buttonPosition = gear.offset();
+        popover.css({
+            right: width + 20,
+            top: 10+buttonPosition.top-(height/2)
+        });
+        return false;
+    });
+
+    ok.on('click',handleClick);
+    apply.on('click',handleClick);
+    resetFilters.on('click', function (){
+        popover.hide();
+        rows.each(function (i, el) {
+            $(el).show();
+        });
+    });
+
+
+    function handleClick(e) {
+        var selectedMetric = selectedMetricField.val();
+        var selectedThreshold = thresholdField.val();
+        popover.hide();
+
+        var applyMode = $(e.target).hasClass('btn-apply');
+        rows.each(function (i, el) {
+            var row = $(el);
+            var rowRawValue = row.find('.value-'+selectedMetric).text();
+
+            var rowValue = parseInt(rowRawValue.replace(/[^0-9\-]/g, ''), 10);
+            var fieldShouldBeVisible = false;
+
+            switch(operator.val()) {
+                case 'lt':
+                    fieldShouldBeVisible = rowValue < selectedThreshold;
+                    break;
+                case 'gt':
+                    fieldShouldBeVisible = rowValue > selectedThreshold;
+                    break;
+                case 'le':
+                    fieldShouldBeVisible = rowValue <= selectedThreshold;
+                    break;
+                case 'ge':
+                    fieldShouldBeVisible = rowValue >= selectedThreshold;
+                    break;
+                case 'eq':
+                    fieldShouldBeVisible = rowValue == selectedThreshold;
+                    break;
+                case 'ne':
+                    fieldShouldBeVisible = rowValue != selectedThreshold;
+                    break;
+            }
+            if (fieldShouldBeVisible) {
+                if (applyMode === false) {
+                    row.show();
+                }
+            } else {
+                row.hide();
+            }
+        });
+
+        return false;
+    }
+
+    var wallTime = {{ wall_time|json_encode|raw }};
+    Xhgui.columnchart('#wall-time-chart', wallTime, {
+        width: 350,
+        height: 300,
+        postfix: ' \u00b5s'
+    });
+    var memoryData = {{ memory|json_encode|raw }};
+    Xhgui.columnchart('#memory-usage-chart', memoryData, {
+        width: 350,
+        height: 300,
+        postfix: ' bytes'
+    });
+
+    $('#function-filter').on('keyup', function(e) {
+        var value = $(this).val();
+        rows.each(function (i, el) {
+            var row = $(el);
+            var name = row.find('.text a').text();
+            if (name.indexOf(value) === -1) {
+                row.hide();
+            } else {
+                row.show();
+            }
+        });
+    });
+
+
+});
+
+function filterFunctons(){
+    var rows = $('#function-calls tbody tr');
+    var regexes = [];
+    for(var i = 0, len = functionFilter.length; i < len; i++) {
+        regexes.push(new RegExp(functionFilter[i]));
+    }
+    rows.each(function (i, el) {
+        var row = $(el);
+        var name = row.find('.text a').text();
+
+        for(var n = 0, len = regexes.length; n < len; n++) {
+            if(regexes[n].test(name)) {
+                row.remove();
+            }
+        }
+    });
+}
+</script>
+{% endblock %}
