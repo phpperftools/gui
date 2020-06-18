@@ -26,9 +26,9 @@ to match multiple function names.
                 <input name="watch[{{ i }}][id]" type="hidden" value="{{ watch.id }}" />
                 <input name="watch[{{ i }}][removed]" type="hidden" class="removed" value="0" />
                 <input class="input-xlarge" name="watch[{{ i }}][name]" type="text" value="{{ watch.name }}" />
-                <label class="checkbox">
-                    <input name="watch[{{ i }}][options][counted]" type="checkbox" value="1" {% if watch['options']['counted'] == 1 %}checked="checked"{% endif %}/>Count
-                </label>
+{#                <label class="checkbox">#}
+{#                    <input name="watch[{{ i }}][options][counted]" type="checkbox" value="1" {% if watch['options']['counted'] == 1 %}checked="checked"{% endif %}/>Count#}
+{#                </label>#}
                 <label class="checkbox">
                     <input name="watch[{{ i }}][options][grouped]" type="checkbox" value="1" {% if watch['options']['grouped'] == 1 %}checked="checked"{% endif %}/>Group
                 </label>
